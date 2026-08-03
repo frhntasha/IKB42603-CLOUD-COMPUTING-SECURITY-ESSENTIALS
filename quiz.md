@@ -1,30 +1,14 @@
-Docker is mainly used to? Answer: Run containers
-Which service model provides virtual machines? Answer: IaaS
-Which IAM component contains permissions? Answer: IAM Policy
-Which AWS-managed policy provides full administrative access? Answer: AdministratorAccess
-For easier permission management, policies should preferably be attached to? Answer: IAM Groups
-Which characteristic allows cloud resources to automatically grow or shrink? Answer: Rapid Elasticity
-Which command lists Kubernetes nodes? Answer: kubectl get nodes
-Which AWS CLI command verifies the current identity? Answer: aws sts get-caller-identity
-Which security principle gives users only the permissions required to perform their tasks? Answer: Principle of Least Privilege
-Which deployment model provides the MOST control? Answer: Private Cloud
-A Kubernetes cluster consists of? Answer: Multiple nodes
-Access keys are mainly used for? Answer: Programmatic access
-Cloud computing refers to? Answer: Delivering computing resources over the Internet
-Which deployment model combines private and public cloud? Answer: Hybrid Cloud
-A collection of IAM users is called? Answer: IAM Group
-In the ARN arn:aws:s3:::my-bucket, which component represents the AWS service? Answer: s3
-Which account should never have access keys created for routine use? Answer: Root User
-Which endpoint is commonly used with LocalStack? Answer: http://localhost:4566
-The smallest deployable unit in Kubernetes is: Answer: Pod
-Which AWS identity has unlimited privileges? Answer: Root User
-Which service model requires customers to manage the operating system? Answer: IaaS
-LocalStack is used because it? Answer: Simulates AWS services locally
-Which tool creates a local Kubernetes cluster? Answer: kind
-Which IAM identity is normally used as a temporary identity? Answer: IAM Role
-Google Docs is an example of? Answer: SaaS
-What does ARN stand for? Answer: Amazon Resource Name
-If an access key is compromised, what should be done first? Answer: Deactivate or rotate the key
-Which is NOT an essential characteristic of cloud computing? Answer: Manual Provisioning
-Which ARN component identifies the AWS account that owns the resource? Answer: Account ID
-A node is? Answer: A worker machine
+<img width="807" height="695" alt="image" src="https://github.com/user-attachments/assets/0e3172e4-7f70-4192-b5d3-74b1ea1d48fa" />
+<img width="812" height="780" alt="image" src="https://github.com/user-attachments/assets/43870abe-566f-4dee-b5a7-dc8c683c7f9a" />
+<img width="805" height="716" alt="image" src="https://github.com/user-attachments/assets/645577a0-0dc4-4692-b0bb-0eb351a8c456" />
+<img width="801" height="905" alt="image" src="https://github.com/user-attachments/assets/24b6d3b8-b9f7-436e-8b78-47cf051779a1" />
+<img width="801" height="911" alt="image" src="https://github.com/user-attachments/assets/05ad9009-8e4c-4ffa-a1f1-00226cb99299" />
+<img width="812" height="712" alt="image" src="https://github.com/user-attachments/assets/d8d8acca-7aac-40f3-80f1-200d775d3f4f" />
+<img width="810" height="807" alt="image" src="https://github.com/user-attachments/assets/165b2e45-37cd-46c3-b2d1-12dc04e32dce" />
+<img width="806" height="746" alt="image" src="https://github.com/user-attachments/assets/86f3882e-40b5-49f7-98fd-fda12bb32029" />
+<img width="802" height="905" alt="image" src="https://github.com/user-attachments/assets/9487a1d3-12a7-43b5-8473-274be8dde8dc" />
+<img width="817" height="742" alt="image" src="https://github.com/user-attachments/assets/a54e9d66-1ec0-41f4-b26d-4fa9c6b60b56" />
+<img width="810" height="902" alt="image" src="https://github.com/user-attachments/assets/b3cf3b30-348a-492a-9fa8-5be759f0ae7a" />
+<img width="802" height="887" alt="image" src="https://github.com/user-attachments/assets/61415756-a904-4b2a-ae4c-bfce7fef9041" />
+<img width="820" height="851" alt="image" src="https://github.com/user-attachments/assets/78e2b4c2-e9d4-4d5c-9cda-91fc2cd4196c" />
+<img width="817" height="362" alt="image" src="https://github.com/user-attachments/assets/4c4b40d6-7b9a-4285-b36d-978b82b6c078" />
