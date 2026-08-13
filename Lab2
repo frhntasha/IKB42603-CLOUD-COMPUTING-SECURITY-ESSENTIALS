@@ -1,1 +1,32 @@
+IKB42603 Cloud Computing Security Essentials
+Lab 2 Report — Secure Isolation & Multi-Tenancy
+
+Course: IKB42603 Cloud Computing Security Essentials Lab: Lab 2 — Secure Isolation & Multi-Tenancy (Weeks 3–4) CLO Mapping: CLO2 — Construct secure cloud operations that safeguard data integrity
+
+1. Objective
+
+This lab demonstrates compute, network, and storage isolation for a multi-tenant cloud environment using Docker and Kubernetes (via kind). It covers:
+
+Separating tenants into containers and Kubernetes namespaces
+Observing the default-open behaviour of shared infrastructure
+Enforcing network isolation with a default-deny NetworkPolicy
+Enforcing storage/secret isolation with Kubernetes RBAC
+Demonstrating data remanence and secure deletion
+
+2. Setup — Cluster with Policy Enforcement
+
+A kind cluster (ccse-lab2) was created with the default CNI disabled so that Calico could be installed instead, since Calico is required for NetworkPolicy objects to actually be enforced (the default kind network does not enforce policies).
+
+cat <<EOF | kind create cluster --name ccse-lab2 --config=-
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  disableDefaultCNI: true
+  podSubnet: 192.168.0.0/16
+EOF
+
+Calico was then applied to provide policy-enforcing networking, and confirmed ready via rollout status:
+
+kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/calico.yaml
+kubectl -n kube-system rollout status daemonset/calico-node --timeout=180s
 
