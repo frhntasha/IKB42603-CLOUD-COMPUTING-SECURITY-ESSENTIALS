@@ -1,58 +1,84 @@
-Lab 5 — Monitoring, Logging & Incident Detection
-IKB42603 Cloud Computing Security Essentials
-Evidence
+# Lab 5 — Monitoring, Logging & Incident Detection
+## IKB42603 Cloud Computing Security Essentials
 
-Session A (Week 9)
+---
 
-Setup — LocalStack running: 
+## Evidence
 
-Log group & log stream creation: PASTE_IMAGE_02_HERE
+**Session A (Week 9)**
 
-Task 1 — Generated auth.log: PASTE_IMAGE_03_HERE
+Setup — LocalStack running:
+![Setup - LocalStack running](screenshots/lab5_setup_localstack.png)
 
-Task 2 — Centralised read-back from CloudWatch Logs: PASTE_IMAGE_04_HERE
+Log group & log stream creation:
+![Log group and stream creation](screenshots/lab5_logs_setup.png)
 
-Task 3 — Failed-login count grouped by IP: PASTE_IMAGE_05_HERE
+Task 1 — Generated `auth.log`:
+![Task 1 - auth.log generated](screenshots/lab5_task1_authlog.png)
 
-Session B (Week 10)
+Task 2 — Centralised read-back from CloudWatch Logs:
+![Task 2 - centralised read-back](screenshots/lab5_task2_centralized_readback.png)
 
-Task 4 — Hash-chained log (auth.chain): 
+Task 3 — Failed-login count grouped by IP:
+![Task 3 - failed login count by IP](screenshots/lab5_task3_failedlogin_query.png)
 
-Task 4 — Tamper test: original vs. tampered final hash: PASTE_IMAGE_07_HERE
+**Session B (Week 10)**
 
-Task 5 — Correlation ALERT output: PASTE_IMAGE_08_HERE
+Task 4 — Hash-chained log (`auth.chain`):
+![Task 4 - hash chained log](screenshots/lab5_task4a_authchain.png)
 
-Task 6 — Containment rule (iptables DROP): PASTE_IMAGE_09_HERE
+Task 4 — Tamper test: original vs. tampered final hash:
+![Task 4 - tamper detected](screenshots/lab5_task4b_tamper_detected.png)
 
-Task 6 — Evidence hash file: PASTE_IMAGE_10_HERE
+Task 5 — Correlation ALERT output:
+![Task 5 - correlation alert](screenshots/lab5_task5_correlation_alert.png)
 
-Verification (log group + integrity check): PASTE_IMAGE_11_HERE
+Task 6 — Containment rule (iptables DROP):
+![Task 6 - containment rule](screenshots/lab5_task6a_containment.png)
 
-Incident Report
+Task 6 — Evidence hash file:
+![Task 6 - evidence hash file](screenshots/lab5_task6b_evidence_hash.png)
 
-Detection The incident was surfaced by correlating three separate log entries in /ccse/app's auth stream rather than by any single alert. A query of auth.log showed four LOGIN_FAIL events for user admin, all originating from IP 203.0.113.9, within a 12-second window (09:01:10–09:01:18).
+Verification (log group + integrity check):
+![Verification - log group and integrity check](screenshots/lab5_verification.png)
 
-Analysis The same IP that generated the four failed logins produced a LOGIN_OK four seconds after the last failure, followed shortly by an EXPORT_DATA event transferring 500MB. Running the correlation check (FAILS≥3 AND SUCCESS≥1 AND EXPORT≥1 for the same IP) returned fails=4, success=1, export=1, triggering the alert: "probable brute-force → compromise → data exfiltration." No individual log line was inherently malicious; the pattern only became visible when the three event types were correlated by source IP.
+---
 
-Containment The attacker IP 203.0.113.9 was blocked at the network layer using an iptables DROP rule on all inbound traffic from that address, preventing further access attempts or additional data exfiltration from the same source.
+## Incident Report
 
-Evidence & Integrity Prior to containment, auth.log was chained into a SHA-256 hash chain (auth.chain), where each entry's hash depends on both its own content and the previous entry's hash. A tamper test (changing 500MB to 5MB in a copy of the log) produced a completely different final hash (72f1d537... vs. the original ababa787...), confirming the chain reliably detects alteration. A timestamped evidence copy (evidence_20260910.log) was also taken and hashed (sha256sum) to preserve chain-of-custody; the hash was independently re-verified (sha256sum -c) and returned OK.
+**Detection**
+The incident was surfaced by correlating three separate log entries in `/ccse/app`'s `auth` stream rather than by any single alert. A query of `auth.log` showed four `LOGIN_FAIL` events for user `admin`, all originating from IP `203.0.113.9`, within a 12-second window (09:01:10–09:01:18).
 
-Lesson Learned No single log line indicated compromise — brute-force attempts, a login, and a data export are each unremarkable in isolation. Effective detection required centralising logs and correlating multiple event types by a shared attribute (source IP) over a time window, reinforcing that a SIEM-style correlation approach catches incidents that per-line monitoring would miss.
+**Analysis**
+The same IP that generated the four failed logins produced a `LOGIN_OK` four seconds after the last failure, followed shortly by an `EXPORT_DATA` event transferring 500MB. Running the correlation check (`FAILS≥3 AND SUCCESS≥1 AND EXPORT≥1` for the same IP) returned `fails=4, success=1, export=1`, triggering the alert: *"probable brute-force → compromise → data exfiltration."* No individual log line was inherently malicious; the pattern only became visible when the three event types were correlated by source IP.
 
-Short-Answer Questions
+**Containment**
+The attacker IP `203.0.113.9` was blocked at the network layer using an `iptables DROP` rule on all inbound traffic from that address, preventing further access attempts or additional data exfiltration from the same source.
 
-Q1. What is the difference between a log and an event? Give an example of each from this lab. A log is a durable, stored record of something that happened, which can be queried at any later time — e.g., the line 2025-03-01T09:01:10 LOGIN_FAIL user=admin ip=203.0.113.9 stored in auth.log/CloudWatch Logs. An event is a real-time trigger fired the moment a condition is met — e.g., the correlation script's output ALERT: probable brute-force -> compromise -> data exfiltration, generated live when the fail/success/export thresholds were crossed, rather than being a static record.
+**Evidence & Integrity**
+Prior to containment, `auth.log` was chained into a SHA-256 hash chain (`auth.chain`), where each entry's hash depends on both its own content and the previous entry's hash. A tamper test (changing `500MB` to `5MB` in a copy of the log) produced a completely different final hash (`72f1d537...` vs. the original `ababa787...`), confirming the chain reliably detects alteration. A timestamped evidence copy (`evidence_20260910.log`) was also taken and hashed (`sha256sum`) to preserve chain-of-custody; the hash was independently re-verified (`sha256sum -c`) and returned `OK`.
 
-Q2. Why must audit logs be tamper-proof, and how does a hash chain achieve this? Audit logs must be tamper-proof because they are often the only record of what an attacker did, and an attacker with system access will typically try to edit or delete logs to hide their tracks — an unprotected log cannot be trusted as evidence. A hash chain achieves this by making each entry's hash a function of its own content and the previous entry's hash. Changing any single entry changes its hash, which cascades and changes every hash after it in the chain, so the final hash no longer matches the original — making any alteration immediately detectable without needing to inspect every line manually.
+**Lesson Learned**
+No single log line indicated compromise — brute-force attempts, a login, and a data export are each unremarkable in isolation. Effective detection required centralising logs and correlating multiple event types by a shared attribute (source IP) over a time window, reinforcing that a SIEM-style correlation approach catches incidents that per-line monitoring would miss.
 
-Q3. How did correlation detect an incident that no single log line revealed? Individually, four failed logins could be a typo, one successful login is routine, and one data export is normal admin activity. None of these alone is conclusive evidence of an attack. Correlation combined all three signals — repeated failures, followed by a success, followed by an export, all from the same source IP within a short time window — into a single meaningful pattern (brute-force → compromise → exfiltration) that no individual entry could show on its own.
+---
 
-Q4. List the incident-response steps you performed and the goal of each.
+## Short-Answer Questions
 
-Detect — correlate log events to identify the suspicious IP and confirm an incident occurred.
-Contain — block the attacker's IP (iptables DROP) to stop further unauthorized access or exfiltration.
-Collect evidence — make a timestamped, hashed copy of the log to preserve an untampered record for investigation.
-Document — record the incident timeline and findings (this report) so the incident can be reviewed, reported, and learned from.
+**Q1. What is the difference between a log and an event? Give an example of each from this lab.**
+A **log** is a durable, stored record of something that happened, which can be queried at any later time — e.g., the line `2025-03-01T09:01:10 LOGIN_FAIL user=admin ip=203.0.113.9` stored in `auth.log`/CloudWatch Logs. An **event** is a real-time trigger fired the moment a condition is met — e.g., the correlation script's output `ALERT: probable brute-force -> compromise -> data exfiltration`, generated live when the fail/success/export thresholds were crossed, rather than being a static record.
 
-Q5. How do the same logs serve both security monitoring and compliance evidence? The same log data serves two purposes at once: for security monitoring, it enables real-time or near-real-time detection of malicious patterns (as in Task 5's correlation alert). For compliance evidence, the same tamper-evident, hashed records (Task 4 and Task 6) demonstrate to auditors or regulators that access to systems and data was tracked, that the organisation can reconstruct what happened during an incident, and that the evidence itself has not been altered — satisfying requirements such as audit trails and data-integrity controls referenced in Weeks 6, 10 and 11.
+**Q2. Why must audit logs be tamper-proof, and how does a hash chain achieve this?**
+Audit logs must be tamper-proof because they are often the only record of what an attacker did, and an attacker with system access will typically try to edit or delete logs to hide their tracks — an unprotected log cannot be trusted as evidence. A hash chain achieves this by making each entry's hash a function of its own content **and** the previous entry's hash. Changing any single entry changes its hash, which cascades and changes every hash after it in the chain, so the final hash no longer matches the original — making any alteration immediately detectable without needing to inspect every line manually.
+
+**Q3. How did correlation detect an incident that no single log line revealed?**
+Individually, four failed logins could be a typo, one successful login is routine, and one data export is normal admin activity. None of these alone is conclusive evidence of an attack. Correlation combined all three signals — repeated failures, followed by a success, followed by an export, all from the same source IP within a short time window — into a single meaningful pattern (brute-force → compromise → exfiltration) that no individual entry could show on its own.
+
+**Q4. List the incident-response steps you performed and the goal of each.**
+- **Detect** — correlate log events to identify the suspicious IP and confirm an incident occurred.
+- **Contain** — block the attacker's IP (`iptables DROP`) to stop further unauthorized access or exfiltration.
+- **Collect evidence** — make a timestamped, hashed copy of the log to preserve an untampered record for investigation.
+- **Document** — record the incident timeline and findings (this report) so the incident can be reviewed, reported, and learned from.
+
+**Q5. How do the same logs serve both security monitoring and compliance evidence?**
+The same log data serves two purposes at once: for **security monitoring**, it enables real-time or near-real-time detection of malicious patterns (as in Task 5's correlation alert). For **compliance evidence**, the same tamper-evident, hashed records (Task 4 and Task 6) demonstrate to auditors or regulators that access to systems and data was tracked, that the organisation can reconstruct what happened during an incident, and that the evidence itself has not been altered — satisfying requirements such as audit trails and data-integrity controls referenced in Weeks 6, 10 and 11.
