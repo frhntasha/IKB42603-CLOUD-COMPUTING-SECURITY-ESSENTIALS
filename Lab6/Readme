@@ -1,0 +1,101 @@
+# Lab 6 — Object Storage Security & the Data Security Lifecycle
+## IKB42603 Cloud Computing Security Essentials
+
+---
+
+## Evidence
+
+**Session A (Week 11)**
+
+Setup — LocalStack Pro running, identity verified:
+![Setup - LocalStack Pro](screenshots/lab6_setup_localstack_pro.png)
+
+Task 1 — Object list and classification tag:
+![Task 1 - classification](screenshots/lab6_task1_classification.png)
+
+Task 2 — Anonymous read returning the leaked record:
+![Task 2 - breach](screenshots/lab6_task2_breach_anonymous_read.png)
+
+Task 3 — Block Public Access (all four flags true):
+![Task 3a - public access block](screenshots/lab6_task3a_public_access_block.png)
+
+Task 3 — Guardrail re-test (policy re-applied, anonymous read result):
+![Task 3b - guardrail not enforced](screenshots/lab6_task3b_guardrail_not_enforced.png)
+
+Task 3 — Least-privilege policy applied:
+![Task 3c - least privilege policy](screenshots/lab6_task3c_least_privilege_policy.png)
+
+Task 4 — Analyst's two attempts (internal allowed, confidential denied):
+![Task 4 - identity vs resource policy](screenshots/lab6_task4_identity_vs_resource_policy.png)
+
+**Session B (Week 12)**
+
+Task 5 — head-object showing aws:kms and key ID:
+![Task 5 - default encryption](screenshots/lab6_task5_default_encryption.png)
+
+Task 6 — Presigned URL valid:
+![Task 6a - presigned URL valid](screenshots/lab6_task6a_presigned_url_valid.png)
+
+Task 6 — Presigned URL after expiry:
+![Task 6b - expiry not enforced](screenshots/lab6_task6b_presigned_url_expiry_not_enforced.png)
+
+Task 6 — SecureTransport condition-key trap:
+![Task 6c - SecureTransport not enforced](screenshots/lab6_task6c_securetransport_not_enforced.png)
+
+Task 7 — Version listing:
+![Task 7a - versions](screenshots/lab6_task7a_versions.png)
+
+Task 7 — Delete marker:
+![Task 7b - delete marker](screenshots/lab6_task7b_delete_marker.png)
+
+Task 7 — Data remanence (recovered original diagnosis):
+![Task 7c - data remanence](screenshots/lab6_task7c_data_remanence.png)
+
+Task 7 — Permanent per-version deletion:
+![Task 7d - permanent deletion](screenshots/lab6_task7d_permanent_deletion.png)
+
+Task 8 — Lifecycle rules enabled:
+![Task 8a - lifecycle rules](screenshots/lab6_task8a_lifecycle_rules.png)
+
+Task 8 — KMS key pending deletion:
+![Task 8b - key pending deletion](screenshots/lab6_task8b_key_pending_deletion.png)
+
+Task 8 — KMS enforcement (encrypt refused on disabled key):
+![Task 8c - KMS enforcement](screenshots/lab6_task8c_kms_enforcement.png)
+
+Verification — final bucket security posture:
+![Verification](screenshots/lab6_verification_final.png)
+
+---
+
+## Data Classification Table
+
+| Classification | Who may read it | Impact if leaked | Control you will apply |
+|---|---|---|---|
+| **public** | Anyone (general public/patients) | Minimal — information is meant to be public | No restriction needed; can remain readable by all |
+| **internal** | Staff/organisation account holders only | Moderate — operational disruption, minor privacy concern (duty schedules, internal processes) | Least-privilege bucket policy scoped to `internal/*` prefix, restricted to the organisation's own account |
+| **confidential** | Authorised individuals only (e.g. specific clinical staff), never anonymous or broad-IAM users | Severe — patient privacy breach, legal/regulatory exposure (PDPA/GDPR), reputational damage | Default SSE-KMS encryption, explicit Deny in bucket policy overriding any broad IAM allow, Block Public Access, versioning with provable deletion via cryptographic erasure |
+
+---
+
+## Short-Answer Questions
+
+**Q1. Which single element of the Task 2 policy caused the exposure, and why is `Principal: "*"` more dangerous on a bucket policy than an over-broad IAM policy attached to one user?**
+The element `"Principal": "*"` caused the exposure — it means the policy applies to any requester, including anonymous callers with no AWS credentials at all. An over-broad IAM policy attached to one user is still bounded: only that single identity (with its own credentials) can exploit it. A resource policy with `Principal: "*"` removes the identity requirement entirely, so the blast radius is the entire internet, not one compromised account.
+
+**Q2. Explain the difference between an identity-based policy and a resource-based policy. In Task 4, which one decided each of the analyst's two requests?**
+An identity-based policy (IAM policy) is attached to a user, group, or role and defines what that identity is allowed to do. A resource-based policy (bucket policy) is attached to the resource itself and defines who may act on it, regardless of their own IAM permissions. In Task 4, the request to `internal/roster.txt` was allowed because both policies agreed. The request to `confidential/record.txt` was decided by the **resource-based (bucket) policy's explicit Deny** — it overrode the IAM policy's broad `Allow`, confirmed by the error message citing "an explicit deny in a resource-based policy."
+
+**Q3. Block Public Access is described as a guardrail rather than a control. What is the difference, and why does the distinction matter for an organisation with many engineers?**
+A control typically refers to a specific configuration applied to one resource (like a single bucket policy) that can be changed or misconfigured by any engineer with sufficient permissions. A guardrail is a standing, account/bucket-level restriction that overrides any individual attempt to violate it — it doesn't rely on every engineer getting every policy right every time. For an organisation with many engineers, this matters because human error is inevitable at scale; a guardrail provides a systemic safety net so that one careless or rushed change cannot single-handedly cause a breach.
+
+**Q4. Your bucket has default SSE-KMS encryption. Does that protect the confidential record from the analyst in Task 4? Explain precisely what server-side encryption does and does not defend against.**
+No, SSE-KMS does not protect the confidential record from the analyst in Task 4. Server-side encryption protects data at rest from someone who gains access to the underlying storage medium without going through the S3/KMS access control layer (e.g. a stolen disk, unauthorized backend access). It does **not** defend against someone who is authorised to call `GetObject` through the normal API — if the analyst had been allowed to read the object, SSE-KMS would have transparently decrypted it for them. Access control (IAM + bucket policy) and encryption are separate layers; encryption alone is not an authorization mechanism.
+
+**Q5. A patient invokes their right to erasure. Using your Task 7 evidence, explain why delete-object alone is not compliant, and describe two mechanisms that would make the deletion provable.**
+In a versioned bucket, a plain `delete-object` only adds a delete marker as the new "current" version — it does not remove the underlying data. Task 7 demonstrated this directly: after "deleting" the record, the original unredacted version was still fully recoverable via `--version-id null`. This means "we deleted it" is not true in any verifiable sense the underlying data still exists. Two mechanisms that make deletion provable: (1) **explicit per-version deletion** — deleting every version ID of the object, as demonstrated in Task 7, so no prior copy remains in the bucket; and (2) **cryptographic erasure** — destroying the KMS key that encrypted the data (Task 8), which renders all copies of the ciphertext permanently unrecoverable regardless of how many versions or backups exist, and is independently verifiable via the KMS key's state.
+
+**Q6. You are the auditor in Week 11. Name three commands from this lab whose output you would collect as compliance evidence, and state which control each one evidences.**
+1. `aws s3api get-public-access-block --bucket $BUCKET` — evidences that public exposure is actively blocked at the account/bucket level (Block Public Access guardrail).
+2. `aws s3api get-bucket-encryption --bucket $BUCKET` — evidences that data at rest is encrypted by default using a customer-managed KMS key, without depending on the uploader.
+3. `aws kms describe-key --key-id $KEY_ID --query 'KeyMetadata.KeyState'` — evidences provable, irreversible deletion of data (cryptographic erasure) when a key shows `PendingDeletion` or `Deleted`, supporting compliance with data-subject erasure requests.
